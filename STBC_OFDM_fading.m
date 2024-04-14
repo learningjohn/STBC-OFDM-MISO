@@ -46,7 +46,7 @@ for i = 1:length(SNR_dB)
        h2 = sqrt([0.4;0.3;0.2;0.1]).*(randn(4,1)+1j*randn(4,1))/sqrt(2);  
        %天线一二同时发送经历不同的信道响应，但AWGN相同
        R1 = awgn(conv(h1,sym_OFDM_NT1(:,1))+conv(h2,sym_OFDM_NT2(:,1)),SNR_dB(i),10*log10(2));%接收天线接收到的第一个信号,由于多径影响，单个符号传输指定接收信号平均功率为2，dBW换算为10log10
-       R2 = awgn(conv(h1,sym_OFDM_NT1(:,2))+conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),10*log10(2));%接收天线接收到的第一个信号
+       R2 = awgn(conv(h1,sym_OFDM_NT1(:,2))+conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),10*log10(2));%接收天线接收到的第二个信号
        %天线一二同时发送经历不同的信道响应，AWGN也不同，结果一样，区别在于接收信号功率一个为2，一个为1
        %R1 = awgn(conv(h1,sym_OFDM_NT1(:,1)),SNR_dB(i),0)+awgn(conv(h2,sym_OFDM_NT2(:,1)),SNR_dB(i),0);%接收天线接收到的第一个信号
        %R2 = awgn(conv(h1,sym_OFDM_NT1(:,2)),SNR_dB(i),0)+awgn(conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),0);
@@ -65,12 +65,14 @@ for i = 1:length(SNR_dB)
 
        %线性变换
        X_temp = D'*Y;
-       %计算D1*D1+D2*D2*
+       %计算D1*D1+D2D2*
        D_temp = diag(abs(H1).^2+abs(H2).^2);
        %克罗内尔积
        D_h = kron(eye(2),D_temp);
        %均衡
        X = inv(D_h)*X_temp;
+
+       %X = X_temp./[abs(H1).^2+abs(H2).^2 ; abs(H1).^2+abs(H2).^2];
        %解调
        sym_rec = qamdemod(X,M,'UnitAveragePower',true);
        %统计误符号数、误比特数
@@ -112,7 +114,7 @@ semilogy(SNR_dB,ser_thoery);
 semilogy(SNR_dB,symerr_rate_siso);
 semilogy(SNR_dB,ser_thoery_div2);
 
-legend('STBC','理论分集增益1','SISO','理论分集增益2')
+legend('STBC-OFDM','理论1分集增益','SISO','理论2分集增益')
 
 figure()
 semilogy(SNR_dB,biterr_rate);
