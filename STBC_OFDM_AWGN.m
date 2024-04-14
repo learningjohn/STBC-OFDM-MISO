@@ -4,14 +4,12 @@ N = 128;    %FFT长度，OFDM信号点数
 Cp_len = 16; %循环前缀长度
 Sym_num = 2000;%OFDM符号数
 M = 16; %QAM调制阶数
-SNR_dB = 0:1:20; %信噪比
+SNR_dB = 0:1:15; %信噪比
 NT = 2;NR = 1;%发送天线2，接收天线1
 
 for i = 1:length(SNR_dB)
    biterr_count = 0;
    symerr_count = 0;
-   biterr_count_siso = 0;
-   symerr_count_siso = 0;
     for j=1:Sym_num/2 %一次传两个OFDM符号，传两回
        %%
        %发射端
@@ -39,17 +37,10 @@ for i = 1:length(SNR_dB)
        %%
        %信道
        %传输分两个时隙 
-       %AWGN信道
-       %h1=1;h2=1;
-       %多径瑞利信道，多径数4
-       h1 = sqrt([0.4;0.3;0.2;0.1]).*(randn(4,1)+1j*randn(4,1))/sqrt(2);
-       h2 = sqrt([0.4;0.3;0.2;0.1]).*(randn(4,1)+1j*randn(4,1))/sqrt(2);  
+       h1 = 1;h2 = 1;  %信道响应，无衰落情况
        %天线一二同时发送经历不同的信道响应，但AWGN相同
-       R1 = awgn(conv(h1,sym_OFDM_NT1(:,1))+conv(h2,sym_OFDM_NT2(:,1)),SNR_dB(i),10*log10(2));%接收天线接收到的第一个信号,由于多径影响，单个符号传输指定接收信号平均功率为2，dBW换算为10log10
-       R2 = awgn(conv(h1,sym_OFDM_NT1(:,2))+conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),10*log10(2));%接收天线接收到的第一个信号
-       %天线一二同时发送经历不同的信道响应，但AWGN也不同，结果一样，区别在于接收信号功率一个为2，一个为1
-       %R1 = awgn(conv(h1,sym_OFDM_NT1(:,1)),SNR_dB(i),0)+awgn(conv(h2,sym_OFDM_NT2(:,1)),SNR_dB(i),0);%接收天线接收到的第一个信号
-       %R2 = awgn(conv(h1,sym_OFDM_NT1(:,2)),SNR_dB(i),0)+awgn(conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),0);
+       R1 = awgn(conv(h1,sym_OFDM_NT1(:,1))+conv(h2,sym_OFDM_NT2(:,1)),SNR_dB(i),'measured');%接收天线接收到的第一个信号
+       R2 = awgn(conv(h1,sym_OFDM_NT1(:,2))+conv(h2,sym_OFDM_NT2(:,2)),SNR_dB(i),'measured');
        %R1 = sym_OFDM_NT1(:,1)+sym_OFDM_NT2(:,1);
        %R2 = sym_OFDM_NT1(:,2)+sym_OFDM_NT2(:,2);
        %%
@@ -66,7 +57,7 @@ for i = 1:length(SNR_dB)
        %线性变换
        X_temp = D'*Y;
        %计算D1*D1+D2*D2*
-       D_temp = diag(abs(H1).^2+abs(H2).^2);
+       D_temp = diag(abs(H1).^2+abs(H2.^2));
        %克罗内尔积
        D_h = kron(eye(2),D_temp);
        %均衡
@@ -77,47 +68,19 @@ for i = 1:length(SNR_dB)
        symerr_count = symerr_count+sum(sym_rec~=sym);
        biterr_count = biterr_count+biterr(sym_rec,sym);
        
-       %%
-       %SISO仿真
-       sym_QAM = sym_QAM1;
-       sym_OFDM = ofdm_mod(sym_QAM);
-       sym_OFDM_cp = cp_add(sym_OFDM);
-
-       r = awgn(conv(h1,sym_OFDM_cp),SNR_dB(i),0);
-
-       y = fft(r(Cp_len+1:end,:),N)./sqrt(N);%去循环前缀并FFT，OFDM解调
-
-       x = y./H1;%均衡
-       
-       rec_x = qamdemod(x,M,'UnitAveragePower',true);
-       symerr_count_siso = symerr_count_siso+sum(rec_x~=sym(1:N));
-       biterr_count_siso = biterr_count_siso+biterr(rec_x,sym(1:N));
-       
     end
     symerr_rate(i) = symerr_count/Sym_num/N;
     biterr_rate(i) = biterr_count/Sym_num/N/log2(M);
-
-    symerr_rate_siso(i) = symerr_count_siso/Sym_num/N*2;
-    biterr_rate_siso(i) = biterr_count/Sym_num/N/log2(M)*2;
 end
-
 EbN0 = SNR_dB-10*log10(log2(M));
-[ber_thoery,ser_thoery] = berfading(EbN0,"qam",M,1);
-[ber_thoery_div2,ser_thoery_div2] = berfading(EbN0,"qam",M,2);
-
+[ber_thoery,ser_thoery] = berawgn(EbN0,"qam",M);
 figure()
 semilogy(SNR_dB,symerr_rate);
-xlabel("信噪比（dB）");ylabel("误符号率");
-title("STBC—OFDM,2发1收误符号率");hold on;
 semilogy(SNR_dB,ser_thoery);
-semilogy(SNR_dB,symerr_rate_siso);
-semilogy(SNR_dB,ser_thoery_dev2);
-
-legend('STBC','理论分集增益1','SISO','理论分集增益2')
-
+xlabel("信噪比（dB）");ylabel("误符号率");
+title("STBC—OFDM,2发1收误符号率")
+legend('STBC_OFDM','AWGN理论')
 figure()
 semilogy(SNR_dB,biterr_rate);
-semilogy(SNR_dB,ber_thoery);
 xlabel("信噪比（dB）");ylabel("误比特率");
 title("STBC—OFDM,2发1收误比特率")
-legend('STBC','理论')
