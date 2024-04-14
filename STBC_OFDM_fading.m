@@ -1,4 +1,5 @@
-%AWGN下的STBC-OFDM系统
+%衰落信道下的STBC-OFDM系统
+%ZUST,2024/4/13
 clc;clear;
 N = 128;    %FFT长度，OFDM信号点数
 Cp_len = 16; %循环前缀长度
@@ -95,11 +96,12 @@ for i = 1:length(SNR_dB)
        symerr_count_siso = symerr_count_siso+sum(rec_x~=sym(1:N));
        biterr_count_siso = biterr_count_siso+biterr(rec_x,sym(1:N));
     end
+    
     symerr_rate(i) = symerr_count/Sym_num/N;
     biterr_rate(i) = biterr_count/Sym_num/N/log2(M);
 
     symerr_rate_siso(i) = symerr_count_siso/Sym_num/N*2;
-    biterr_rate_siso(i) = biterr_count/Sym_num/N/log2(M)*2;
+    biterr_rate_siso(i) = biterr_count_siso/Sym_num/N/log2(M)*2;
 end
 
 EbN0 = SNR_dB-10*log10(log2(M));

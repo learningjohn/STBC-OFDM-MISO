@@ -1,10 +1,11 @@
 %AWGN下的STBC-OFDM系统
+%%ZUST,2024/4/13
 clc;clear;
 N = 128;    %FFT长度，OFDM信号点数
 Cp_len = 16; %循环前缀长度
 Sym_num = 2000;%OFDM符号数
 M = 16; %QAM调制阶数
-SNR_dB = 0:1:15; %信噪比
+SNR_dB = 0:1:20; %信噪比
 NT = 2;NR = 1;%发送天线2，接收天线1
 
 for i = 1:length(SNR_dB)
@@ -75,11 +76,11 @@ end
 EbN0 = SNR_dB-10*log10(log2(M));
 [ber_thoery,ser_thoery] = berawgn(EbN0,"qam",M);
 figure()
-semilogy(SNR_dB,symerr_rate);
+semilogy(SNR_dB,symerr_rate);hold on
 semilogy(SNR_dB,ser_thoery);
 xlabel("信噪比（dB）");ylabel("误符号率");
 title("STBC—OFDM,2发1收误符号率")
-legend('STBC_OFDM','AWGN理论')
+legend('STBC-OFDM','AWGN理论')
 figure()
 semilogy(SNR_dB,biterr_rate);
 xlabel("信噪比（dB）");ylabel("误比特率");
