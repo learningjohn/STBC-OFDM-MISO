@@ -117,7 +117,7 @@ semilogy(SNR_dB,ser_thoery_div2);
 legend('STBC-OFDM','理论1分集增益','SISO','理论2分集增益')
 
 figure()
-semilogy(SNR_dB,biterr_rate);
+semilogy(SNR_dB,biterr_rate);hold on;
 semilogy(SNR_dB,ber_thoery);
 xlabel("信噪比（dB）");ylabel("误比特率");
 title("STBC—OFDM,2发1收误比特率")
