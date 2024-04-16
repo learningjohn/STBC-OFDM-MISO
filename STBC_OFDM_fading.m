@@ -58,7 +58,7 @@ for i = 1:length(SNR_dB)
        %接收端
        Y1 = fft(R1(Cp_len+1:end,:),N)./sqrt(N);%去循环前缀并FFT，OFDM解调
        Y2 = fft(R2(Cp_len+1:end,:),N)./sqrt(N);
-       Y = [Y1;conj(Y2)];%OFDM书上没写要对第二个接收信号取共轭
+       Y = [Y1;conj(Y2)];%对第二个接收信号取共轭
 
        H1 = fft(h1,N);%计算信道响应频域，时域卷积频域点乘；
        H2 = fft(h2,N);
@@ -74,7 +74,7 @@ for i = 1:length(SNR_dB)
        %均衡
        X = inv(D_h)*X_temp;
        %X = X_temp./[abs(H1).^2+abs(H2).^2 ; abs(H1).^2+abs(H2).^2];
-       
+
        %解调
        sym_rec = qamdemod(X,M,'UnitAveragePower',true);
        %统计误符号数、误比特数
