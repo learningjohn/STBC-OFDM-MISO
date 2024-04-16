@@ -7,6 +7,8 @@ Sym_num = 2000;%OFDM符号数
 M = 16; %QAM调制阶数
 SNR_dB = 0:1:20; %信噪比
 NT = 2;NR = 1;%发送天线2，接收天线1
+ofdm_mod = @(x) ifft(x,N).*sqrt(N);    %匿名函数,调制函数OFDM并归一化
+cp_add = @(x) [x(end-Cp_len+1:end,:);x];%添加CP函数
 
 for i = 1:length(SNR_dB)
    biterr_count = 0;
@@ -27,12 +29,11 @@ for i = 1:length(SNR_dB)
        STBC_code{2,1} = -conj(sym_QAM2);STBC_code{2,2} = conj(sym_QAM1);
 
        %IFFT,OFDM调制
-       ofdm_mod = @(x) ifft(x,N).*sqrt(N);    %匿名函数,调制函数OFDM并归一化
        STBC_OFDM = cellfun(ofdm_mod,STBC_code,'UniformOutput',false);%ofdm调制
 
        %添加循环前缀
-       cp_add = @(x) [x(end-Cp_len+1:end,:);x];%
        STBC_OFDM_addCP =  cellfun(cp_add,STBC_OFDM,'UniformOutput',false);
+
        %天线一的两个OFDM符号
        sym_OFDM_NT1 = cell2mat(STBC_OFDM_addCP(:,1)');
        %天线二的两个OFDM符号流
@@ -72,8 +73,8 @@ for i = 1:length(SNR_dB)
        D_h = kron(eye(2),D_temp);
        %均衡
        X = inv(D_h)*X_temp;
-
        %X = X_temp./[abs(H1).^2+abs(H2).^2 ; abs(H1).^2+abs(H2).^2];
+       
        %解调
        sym_rec = qamdemod(X,M,'UnitAveragePower',true);
        %统计误符号数、误比特数
@@ -115,7 +116,6 @@ title("STBC—OFDM,2发1收误符号率");hold on;
 semilogy(SNR_dB,ser_thoery);
 semilogy(SNR_dB,symerr_rate_siso);
 semilogy(SNR_dB,ser_thoery_div2);
-
 legend('STBC-OFDM','理论1分集增益','SISO','理论2分集增益')
 
 figure()
