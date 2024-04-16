@@ -21,7 +21,7 @@ for i = 1:length(SNR_dB)
        sym = randi([0,M-1],N*2,1);%符号信源
        sym_QAM  = qammod(sym,M,'UnitAveragePower',true);%QAM调制，功率归一化；
        sym_QAM1(:,1) = sym_QAM(1:N,:);
-       sym_QAM2(:,1) = sym_QAM(N+1:end,:);%分为两组数据，并进行STBC编码
+       sym_QAM2(:,1) = sym_QAM(N+1:end,:);%分为两组数据，以进行STBC编码
        STBC_code = cell(2);%元胞初始化编码矩阵
 
        %STBC编码
