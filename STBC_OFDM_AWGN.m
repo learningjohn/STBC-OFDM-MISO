@@ -13,6 +13,8 @@ cp_add = @(x) [x(end-Cp_len+1:end,:);x];%添加循环前缀函数
 for i = 1:length(SNR_dB)
    biterr_count = 0;
    symerr_count = 0;
+   biterr_count_siso = 0;
+   symerr_count_siso = 0;
     for j=1:Sym_num/2 %一次传两个OFDM符号，传两回
        %%
        %发射端
@@ -68,10 +70,27 @@ for i = 1:length(SNR_dB)
        %统计误符号数、误比特数
        symerr_count = symerr_count+sum(sym_rec~=sym);
        biterr_count = biterr_count+biterr(sym_rec,sym);
+       %%
+       %SISO仿真
+       sym_QAM = sym_QAM1;
+       sym_OFDM = ofdm_mod(sym_QAM);
+       sym_OFDM_cp = cp_add(sym_OFDM);
+
+       r = awgn(conv(h1,sym_OFDM_cp),SNR_dB(i),0);
+
+       y = fft(r(Cp_len+1:end,:),N)./sqrt(N);%去循环前缀并FFT，OFDM解调
+
+       x = y./H1.';%均衡
        
+       rec_x = qamdemod(x,M,'UnitAveragePower',true);
+       symerr_count_siso = symerr_count_siso+sum(rec_x~=sym(1:N));
+       biterr_count_siso = biterr_count_siso+biterr(rec_x,sym(1:N));
     end
     symerr_rate(i) = symerr_count/Sym_num/N;
     biterr_rate(i) = biterr_count/Sym_num/N/log2(M);
+    symerr_rate_siso(i) = symerr_count_siso/Sym_num/N*2;
+    biterr_rate_siso(i) = biterr_count_siso/Sym_num/N/log2(M)*2;
+
 end
 EbN0 = SNR_dB-10*log10(log2(M));
 [ber_thoery,ser_thoery] = berawgn(EbN0,"qam",M);
